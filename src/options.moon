@@ -38,6 +38,7 @@ options =
 	apply_current_filters: true
 	-- Set the number of encoding threads, for codecs libvpx and libvpx-vp9
 	libvpx_threads: 4
+	libx264_preset: "veryfast"
 	additional_flags: ""
 	-- Useful for flags that may impact output filesize, such as crf, qmin, qmax etc
 	-- Won't be applied when strict_filesize_constraint is on.
