@@ -6,7 +6,7 @@ get_active_tracks = ->
 	active = {}
 	for _, track in ipairs mp.get_property_native("track-list")
 		if track["selected"] and accepted[track["type"]]
-			active[#active + 1] = Track(track["id"], track["ff-index"], track["type"])
+			active[#active + 1] = Track(track)
 	return active
 
 get_current_filters = ->
@@ -39,6 +39,11 @@ encode = (region, startTime, endTime) ->
 	if not params.inputPath
 		message("No file is being played")
 		return
+
+	stream_path = mp.get_property("stream-path")
+	if stream_path ~= params.inputPath
+		msg.info("stream-path <-> path mismatch, assuming this is a youtube-dl stream.")
+		params.inputStreamPath = stream_path
 
 	for _, track in ipairs get_active_tracks!
 		switch track["type"]
@@ -90,7 +95,6 @@ encode = (region, startTime, endTime) ->
 			params.flags[#params.flags + 1] = token
 
 	is_stream = not file_exists(params.inputPath)
-
 	params.twopass = options.twopass and not is_stream
 
 	dir = ""

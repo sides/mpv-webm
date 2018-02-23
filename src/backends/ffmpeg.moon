@@ -18,31 +18,48 @@ class FfmpegBackend extends Backend
 		format = params.format
 
 		-- Build the base command.
-		command = {
-			get_backend_location!,
-			"-y",
-			"-ss", seconds_to_time_string(params.startTime, false, true),
-			"-i", params.inputPath,
-			"-t", tostring(params.endTime - params.startTime)
-		}
+		command = {get_backend_location!, "-y"}
 
-		-- Append our track mappings.
-		if params.videoTrack ~= nil and params.videoTrack.index ~= nil
-			append(command, {
-				"-map", "0:" .. tostring(params.videoTrack.index)
-			})
-		if params.audioTrack ~= nil and params.audioTrack.index ~= nil
-			append(command, {
-				"-map", "0:" .. tostring(params.audioTrack.index)
-			})
-		if params.subTrack ~= nil and params.subTrack.index ~= nil
-			append(command, {
-				"-map", "0:" .. tostring(params.subTrack.index)
-			})
+		-- Based on whether this is a (youtube-dl) stream or not, inputs are handled
+		-- differently.
+		ss = seconds_to_time_string(params.startTime, false, true)
+		if params.inputStreamPath ~= nil
+			-- Assume the video track is what mpv considers to be the main track...
+			-- Not sure if this is correct, but it seems consistent from using youtube-dl
+			-- on multiple sites.
+			adhocVideoTrack = Track({})
+			adhocVideoTrack.isExternal = true
+			adhocVideoTrack.externalFilename = params.inputStreamPath
+			-- Append all our external inputs.
+			for _,track in ipairs {adhocVideoTrack, params.audioTrack, params.subTrack}
+				if track ~= nil and track.isExternal and track.externalFilename
+					append(command, {"-ss", ss, "-i", track.externalFilename})
+		else
+			-- Append the base input.
+			append(command, {"-ss", ss, "-i", params.inputPath})
+			-- Append the track mappings for subtitles.
+			if params.subTrack ~= nil
+				-- If we have external subtitles, add them as input first.
+				if params.subTrack.isExternal
+					if params.subTrack.externalFilename
+						append(command, {
+							"-ss", ss, "-i", params.subTrack.externalFilename,
+							"-map", "1:#{params.subTrack.index}"
+						})
+				else
+					append(command, {"-map", "0:#{params.subTrack.index}"})
+			-- Append the track mappings for video/audio.
+			for _,track in ipairs {params.videoTrack, params.audioTrack}
+				if track ~= nil
+					append(command, {"-map", "0:#{track.index}"})
+
+		-- Append the duration timing.
+		append(command, {"-t", tostring(params.endTime - params.startTime)})
 
 		-- Append our video/audio codecs.
 		append(command, {
-			"-c:v", "#{format.videoCodec}", "-c:a", "#{format.audioCodec}"
+			"-c:v", "#{format.videoCodec}",
+			"-c:a", "#{format.audioCodec}"
 		})
 
 		-- Append filters: Prefilters from the format, raw filters from the parameters, cropping
