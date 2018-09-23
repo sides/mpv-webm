@@ -9,18 +9,14 @@ class MpvBackend extends Backend
 			append(out, {"--#{option_name}=#{prop}"})
 
 	getPlaybackOptions: =>
-		ret = {}
-		self\appendProperty(ret, "sub-ass-override")
-		self\appendProperty(ret, "sub-ass-force-style")
-		self\appendProperty(ret, "sub-auto")
+		opts = {}
 
-		-- tracks added manually (eg. drag-and-drop) won't appear on sub-files, so we
-		-- read them from the track-list.
-		for _, track in ipairs mp.get_property_native("track-list")
-			if track["type"] == "sub" and track["external"]
-				append(ret, {"--sub-files-append=#{track['external-filename']}"})
+		self\appendProperty(opts, "sub-ass-override")
+		self\appendProperty(opts, "sub-ass-force-style")
+		self\appendProperty(opts, "sub-auto")
+		self\appendProperty(opts, "video-rotate")
 
-		return ret
+		return opts
 
 	-- Turn `MpvFilter`s into command line options.
 	solveFilters: (filters) =>
@@ -46,12 +42,23 @@ class MpvBackend extends Backend
 			"--loop-file=no"
 		}
 
-		-- Append video/audio/sub track options.
+		-- Append video/audio track options.
 		append(command, {
 			"--vid=" .. (params.videoTrack ~= nil and tostring(params.videoTrack.id) or "no"),
-			"--aid=" .. (params.audioTrack ~= nil and tostring(params.audioTrack.id) or "no"),
-			"--sid=" .. (params.subTrackId ~= nil and tostring(params.subTrack.id) or "no")
+			"--aid=" .. (params.audioTrack ~= nil and tostring(params.audioTrack.id) or "no")
 		})
+
+		-- Append subtitles, either by track or external (added e.g. via drag and drop).
+		if params.subTrack ~= nil
+			if params.subTrack.isExternal
+				append(command, {
+					"--sid=no",
+					"--sub-files-append=#{params.subTrack.externalFilename}"
+				})
+			else
+				append(command, {"--sid=" .. tostring(params.subTrack.id)})
+		else
+			append(command, {"--sid=no"})
 
 		-- Append mpv exclusive options based on playback to have the encoding match it
 		-- as much as possible.

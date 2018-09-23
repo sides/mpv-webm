@@ -55,7 +55,7 @@ encode = (region, startTime, endTime) ->
 				params.subTrack = track
 
 	if options.scale_height > 0
-		params.scale = Point(-1, options.scale_height)
+		params.scale = Point(-2, options.scale_height)
 
 	if options.apply_current_filters
 		params.mpvFilters = get_current_filters!
@@ -67,6 +67,9 @@ encode = (region, startTime, endTime) ->
 		params.crop = make_fullscreen_region!
 	else
 		params.crop = region
+
+	if options.write_filename_on_metadata
+		params.metadata["title"] = mp.get_property("filename/no-ext")
 
 	if options.target_filesize > 0
 		dT = endTime - startTime

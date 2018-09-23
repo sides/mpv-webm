@@ -106,6 +106,10 @@ class EncodingParameters
 		-- Whether or not to use two-pass encoding.
 		@twopass = false
 
+		-- {table}
+		-- Key-value pairs of metadata to encode with.
+		@metadata = {}
+
 		-- {MpvFilter[]}
 		-- A table of additional mpv filters that should be
 		-- applied to the encoding, or attempted to.

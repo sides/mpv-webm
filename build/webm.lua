@@ -3,56 +3,60 @@ local assdraw = require("mp.assdraw")
 local msg = require("mp.msg")
 local utils = require("mp.utils")
 local mpopts = require("mp.options")
+local mpopts = require("mp.options")
 local options = {
-  -- Defaults to shift+w
-  keybind = "W",
-  -- If empty, saves on the same directory of the playing video.
-  -- A starting "~" will be replaced by the home dir.
-  output_directory = "",
-  run_detached = false,
-  -- Template string for the output file
-  -- %f - Filename, with extension
-  -- %F - Filename, without extension
-  -- %T - Media title, if it exists, or filename, with extension (useful for some streams, such as YouTube).
-  -- %s, %e - Start and end time, with milliseconds
-  -- %S, %E - Start and time, without milliseconds
-  -- %M - "-audio", if audio is enabled, empty otherwise
-  output_template = "%F-[%s-%e]%M",
-  -- Scale video to a certain height, keeping the aspect ratio. -1 disables it.
-  scale_height = -1,
-  -- Target filesize, in kB.
-  target_filesize = 2500,
-  -- If true, will use stricter flags to ensure the resulting file doesn't
-  -- overshoot the target filesize. Not recommended, as constrained quality
-  -- mode should work well, unless you're really having trouble hitting
-  -- the target size.
-  strict_filesize_constraint = false,
-  strict_bitrate_multiplier = 0.95,
-  -- In kilobits.
-  strict_audio_bitrate = 64,
-  -- Sets the output format, from a few predefined ones.
-  -- Currently we have webm-vp8 (libvpx/libvorbis), webm-vp9 (libvpx-vp9/libvorbis)
-  -- and raw (rawvideo/pcm_s16le).
-  output_format = "webm-vp8",
-  -- The encoding backend to use. Currently supports mpv and ffmpeg.
-  backend = "mpv",
-  -- Location to the backend executable. Leave blank to have this fall back on the backend option.
-  backend_location = "",
-  twopass = false,
-  -- If set, applies the video filters currently used on the playback to the encode.
-  apply_current_filters = true,
-  -- Set the number of encoding threads, for codecs libvpx and libvpx-vp9
-  libvpx_threads = 4,
-  libx264_preset = "veryfast",
-  additional_flags = "",
-  -- Useful for flags that may impact output filesize, such as crf, qmin, qmax etc
-  -- Won't be applied when strict_filesize_constraint is on.
-  non_strict_additional_flags = "--ovcopts-add=crf=10",
-  -- The font size used in the menu. Isn't used for the notifications (started encode, finished encode etc)
-  font_size = 28,
-  margin = 10,
-  message_duration = 5
+	-- Defaults to shift+w
+	keybind = "W",
+	-- If empty, saves on the same directory of the playing video.
+	-- A starting "~" will be replaced by the home dir.
+	output_directory = "",
+	run_detached = false,
+	-- Template string for the output file
+	-- %f - Filename, with extension
+	-- %F - Filename, without extension
+	-- %T - Media title, if it exists, or filename, with extension (useful for some streams, such as YouTube).
+	-- %s, %e - Start and end time, with milliseconds
+	-- %S, %E - Start and time, without milliseconds
+	-- %M - "-audio", if audio is enabled, empty otherwise
+	output_template = "%F-[%s-%e]%M",
+	-- Scale video to a certain height, keeping the aspect ratio. -1 disables it.
+	scale_height = -1,
+	-- Target filesize, in kB.
+	target_filesize = 2500,
+	-- If true, will use stricter flags to ensure the resulting file doesn't
+	-- overshoot the target filesize. Not recommended, as constrained quality
+	-- mode should work well, unless you're really having trouble hitting
+	-- the target size.
+	strict_filesize_constraint = false,
+	strict_bitrate_multiplier = 0.95,
+	-- In kilobits.
+	strict_audio_bitrate = 64,
+	-- Sets the output format, from a few predefined ones.
+	-- Currently we have webm-vp8 (libvpx/libvorbis), webm-vp9 (libvpx-vp9/libvorbis)
+	-- and raw (rawvideo/pcm_s16le).
+	output_format = "webm-vp8",
+	-- The encoding backend to use. Currently supports mpv and ffmpeg.
+	backend = "mpv",
+	-- Location to the backend executable. Leave blank to have this fall back on the backend option.
+	backend_location = "",
+	twopass = false,
+	-- If set, applies the video filters currently used on the playback to the encode.
+	apply_current_filters = true,
+	-- If set, writes the video's filename to the "Title" field on the metadata.
+	write_filename_on_metadata = false,
+	-- Set the number of encoding threads, for codecs libvpx and libvpx-vp9
+	libvpx_threads = 4,
+	libx264_preset: "veryfast",
+	additional_flags = "",
+	-- Useful for flags that may impact output filesize, such as crf, qmin, qmax etc
+	-- Won't be applied when strict_filesize_constraint is on.
+	non_strict_additional_flags = "--ovcopts-add=crf=10",
+	-- The font size used in the menu. Isn't used for the notifications (started encode, finished encode etc)
+	font_size = 28,
+	margin = 10,
+	message_duration = 5
 }
+
 mpopts.read_options(options)
 local bold
 bold = function(text)
@@ -160,6 +164,28 @@ run_subprocess = function(params)
     return false
   end
   return true
+end
+local shell_escape
+shell_escape = function(command_line)
+  local ret = { }
+  for _, a in pairs(args) do
+    local s = tostring(a)
+    if {
+      s = match("[^A-Za-z0-9_/:=-]")
+    } then
+      s = "'" .. {
+        s = gsub("'", "'\\''") .. "'"
+      }
+    end
+    table.insert(ret, s)
+  end
+  return table.concat(ret, " ")
+end
+local run_subprocess_popen
+run_subprocess_popen = function(command_line)
+  local command_line_string = shell_escape(command_line)
+  msg.verbose("run_subprocess_popen: running " .. tostring(command_line_string))
+  return io.popen(command_line_string)
 end
 local calculate_scale_factor
 calculate_scale_factor = function()
@@ -526,6 +552,7 @@ do
       self.maxBitrate = 0
       self.audioBitrate = 0
       self.twopass = false
+      self.metadata = { }
       self.mpvFilters = { }
       self.flags = { }
     end,
@@ -908,18 +935,12 @@ do
       end
     end,
     getPlaybackOptions = function(self)
-      local ret = { }
-      self:appendProperty(ret, "sub-ass-override")
-      self:appendProperty(ret, "sub-ass-force-style")
-      self:appendProperty(ret, "sub-auto")
-      for _, track in ipairs(mp.get_property_native("track-list")) do
-        if track["type"] == "sub" and track["external"] then
-          append(ret, {
-            "--sub-files-append=" .. tostring(track['external-filename'])
-          })
-        end
-      end
-      return ret
+      local opts = { }
+      self:appendProperty(opts, "sub-ass-override")
+      self:appendProperty(opts, "sub-ass-force-style")
+      self:appendProperty(opts, "sub-auto")
+      self:appendProperty(opts, "video-rotate")
+      return opts
     end,
     solveFilters = function(self, filters)
       local solved = { }
@@ -947,9 +968,24 @@ do
       }
       append(command, {
         "--vid=" .. (params.videoTrack ~= nil and tostring(params.videoTrack.id) or "no"),
-        "--aid=" .. (params.audioTrack ~= nil and tostring(params.audioTrack.id) or "no"),
-        "--sid=" .. (params.subTrackId ~= nil and tostring(params.subTrack.id) or "no")
+        "--aid=" .. (params.audioTrack ~= nil and tostring(params.audioTrack.id) or "no")
       })
+      if params.subTrack ~= nil then
+        if params.subTrack.isExternal then
+          append(command, {
+            "--sid=no",
+            "--sub-files-append=" .. tostring(params.subTrack.externalFilename)
+          })
+        else
+          append(command, {
+            "--sid=" .. tostring(params.subTrack.id)
+          })
+        end
+      else
+        append(command, {
+          "--sid=no"
+        })
+      end
       append(command, self:getPlaybackOptions())
       local filters = { }
       append(filters, self:solveFilters(format:getPreFilters(self)))
@@ -1361,7 +1397,7 @@ encode = function(region, startTime, endTime)
     end
   end
   if options.scale_height > 0 then
-    params.scale = Point(-1, options.scale_height)
+    params.scale = Point(-2, options.scale_height)
   end
   if options.apply_current_filters then
     params.mpvFilters = get_current_filters()
@@ -1371,6 +1407,9 @@ encode = function(region, startTime, endTime)
     params.crop = make_fullscreen_region()
   else
     params.crop = region
+  end
+  if options.write_filename_on_metadata then
+    params.metadata["title"] = mp.get_property("filename/no-ext")
   end
   if options.target_filesize > 0 then
     local dT = endTime - startTime
@@ -1434,6 +1473,9 @@ do
   local _class_0
   local _base_0 = {
     add_keybinds = function(self)
+      if not self.keybinds then
+        return 
+      end
       for key, func in pairs(self.keybinds) do
         mp.add_forced_key_binding(key, key, func, {
           repeatable = true
@@ -1441,6 +1483,9 @@ do
       end
     end,
     remove_keybinds = function(self)
+      if not self.keybinds then
+        return 
+      end
       for key, _ in pairs(self.keybinds) do
         mp.remove_key_binding(key)
       end
@@ -1503,7 +1548,7 @@ do
       local scale = calculate_scale_factor()
       local margin = options.margin * scale
       ass:pos(margin, margin)
-      return ass:append("{\\fs" .. tostring(options.font_size * scale))
+      return ass:append("{\\fs" .. tostring(options.font_size * scale) .. "}")
     end
   }
   _base_0.__index = _base_0
@@ -1973,6 +2018,10 @@ do
         {
           "strict_filesize_constraint",
           Option("bool", "Strict Filesize Constraint", options.strict_filesize_constraint)
+        },
+        {
+          "write_filename_on_metadata",
+          Option("bool", "Write Filename on Metadata", options.write_filename_on_metadata)
         },
         {
           "target_filesize",
