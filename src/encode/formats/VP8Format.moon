@@ -1,4 +1,4 @@
-class WebmVP8 extends Format
+class VP8Format extends Format
 	new: =>
 		@displayName = "WebM"
 		@supportsTwopass = true
@@ -32,22 +32,4 @@ class WebmVP8 extends Format
 			when "ffmpeg"
 				return {"-threads", options.libvpx_threads}
 
-formats["webm-vp8"] = WebmVP8!
-
-class WebmVP9 extends Format
-	new: =>
-		@displayName = "WebM (VP9)"
-		@supportsTwopass = true
-		@videoCodec = "libvpx-vp9"
-		@audioCodec = "libvorbis"
-		@outputExtension = "webm"
-		@acceptsBitrate = true
-
-	getFlags: (backend) =>
-		switch backend.name
-			when "mpv"
-				return {"--ovcopts-add=threads=#{options.libvpx_threads}"}
-			when "ffmpeg"
-				return {"-threads", options.libvpx_threads}
-
-formats["webm-vp9"] = WebmVP9!
+formats["vp8"] = VP8Format!

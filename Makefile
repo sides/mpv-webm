@@ -2,24 +2,33 @@
 LUASOURCES := src/requires.lua
 LUASOURCES += src/options.lua
 
-SOURCES += src/util.moon
-SOURCES += src/video_to_screen.moon
-SOURCES += src/encoding_parameters.moon
-SOURCES += src/formats/base.moon
-SOURCES += src/formats/rawvideo.moon
-SOURCES += src/formats/webm.moon
-SOURCES += src/formats/hevc.moon
-SOURCES += src/backends/base.moon
-SOURCES += src/backends/mpv.moon
-SOURCES += src/backends/ffmpeg.moon
-SOURCES += src/encode.moon
-SOURCES += src/Page.moon
-SOURCES += src/CropPage.moon
-SOURCES += src/EncodeOptionsPage.moon
-SOURCES += src/PreviewPage.moon
-SOURCES += src/MainPage.moon
+SOURCES += src/util/util.moon
+SOURCES += src/util/Point.moon
+SOURCES += src/util/Region.moon
+SOURCES += src/util/VideoPoint.moon
+SOURCES += src/util/video_to_screen.moon
+
+SOURCES += src/encode/EncodingParameters.moon
+SOURCES += src/encode/MpvFilter.moon
+SOURCES += src/encode/Track.moon
+SOURCES += src/encode/formats/Format.moon
+SOURCES += src/encode/formats/H264Format.moon
+SOURCES += src/encode/formats/RawVideoFormat.moon
+SOURCES += src/encode/formats/VP8Format.moon
+SOURCES += src/encode/formats/VP9Format.moon
+SOURCES += src/encode/backends/Backend.moon
+SOURCES += src/encode/backends/FfmpegBackend.moon
+SOURCES += src/encode/backends/MpvBackend.moon
+SOURCES += src/encode/encode.moon
+
+SOURCES += src/interface/Option.moon
+SOURCES += src/interface/pages/Page.moon
+SOURCES += src/interface/pages/CropPage.moon
+SOURCES += src/interface/pages/EncodeOptionsPage.moon
+SOURCES += src/interface/pages/PreviewPage.moon
+SOURCES += src/interface/pages/MainPage.moon
+
 SOURCES += src/main.moon
-# SOURCES += src/output_encode_progress.moon
 
 TMPDIR       := build
 JOINEDSRC    := $(TMPDIR)/webm_bundle.moon

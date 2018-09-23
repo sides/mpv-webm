@@ -33,4 +33,4 @@ class RawVideo extends Format
 			MpvFilter("format", { "fmt": "bgr24" })
 		}
 
-formats["raw"] = RawVideo!
+formats["rawvideo"] = RawVideo!

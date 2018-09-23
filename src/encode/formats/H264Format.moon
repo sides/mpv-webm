@@ -1,4 +1,4 @@
-class H264 extends Format
+class H264Format extends Format
 	new: =>
 		@displayName = "H.264"
 		@supportsTwopass = true
@@ -14,4 +14,4 @@ class H264 extends Format
 			when "ffmpeg"
 				return {"-preset", options.libx264_preset}
 
-formats["hevc-h264"] = H264!
+formats["h264"] = H264Format!
