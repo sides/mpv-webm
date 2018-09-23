@@ -2,8 +2,16 @@ class FfmpegBackend extends Backend
 	new: =>
 		@name = "ffmpeg"
 
-	escapeQuotes: (str) =>
-		return str\gsub("\"", "\\\"")
+	escapeQuotes: (param) =>
+		return param\gsub("\"", "\\\"")
+
+	escapeFiltergraph: (param) =>
+		-- https://ffmpeg.org/ffmpeg-filters.html#Notes-on-filtergraph-escaping
+		-- First level: escape any of ':\ with a leading \
+		param = param\gsub("([\\:'])", "\\%1")
+		-- Second level: escape any of \'[],; with a leading \. The % signs escape the brackets in the pattern.
+		param = param\gsub("([\\'%[%],;])", "\\%1")
+		return param
 
 	-- Turn `MpvFilter`s into command line options.
 	solveFilters: (filters) =>
@@ -74,7 +82,8 @@ class FfmpegBackend extends Backend
 		-- Append our video/audio codecs.
 		append(command, {
 			"-c:v", "#{format.videoCodec}",
-			"-c:a", "#{format.audioCodec}"
+			"-c:a", "#{format.audioCodec}",
+			"-c:s", "mov_text"
 		})
 
 		-- Append filters: Prefilters from the format, raw filters from the parameters, cropping
@@ -93,6 +102,7 @@ class FfmpegBackend extends Backend
 			"-vf", table.concat(filters, ",")
 		})
 
+		-- Append metadata.
 		for k, v in pairs params.metadata
 			append(command, {
 				"-metadata", "#{k}=\"#{self\escapeQuotes(v)}\""
