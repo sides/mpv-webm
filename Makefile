@@ -3,10 +3,10 @@ LUASOURCES := src/requires.lua
 LUASOURCES += src/options.lua
 
 SOURCES += src/util/util.moon
+SOURCES += src/util/video_to_screen.moon
 SOURCES += src/util/Point.moon
 SOURCES += src/util/Region.moon
 SOURCES += src/util/VideoPoint.moon
-SOURCES += src/util/video_to_screen.moon
 
 SOURCES += src/encode/EncodingParameters.moon
 SOURCES += src/encode/MpvFilter.moon

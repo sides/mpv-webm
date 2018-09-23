@@ -13,7 +13,7 @@ class EncodeOptionsPage extends Page
 
 		-- I really dislike hardcoding this here, but, as said below, order in dicts isn't
 		-- guaranteed, and we can't use the formats dict keys.
-		formatIds = {"webm-vp8", "webm-vp9", "hevc-h264", "raw"}
+		formatIds = {"vp8", "vp9", "h264", "rawvideo"}
 		formatOpts =
 			possibleValues: [{fId, formats[fId].displayName} for fId in *formatIds]
 
