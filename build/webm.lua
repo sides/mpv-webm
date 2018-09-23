@@ -448,10 +448,12 @@ do
   local _base_0 = { }
   _base_0.__index = _base_0
   _class_0 = setmetatable({
-    __init = function(self, id, index, type)
-      self.id = id
-      self.index = index
-      self.type = type
+    __init = function(self, track)
+      self.id = track["id"]
+      self.index = track["ff-index"] or 0
+      self.type = track["type"]
+      self.isExternal = track["external"]
+      self.externalFilename = self.isExternal and track["external-filename"] or nil
     end,
     __base = _base_0,
     __name = "Track"
@@ -510,6 +512,7 @@ do
     __init = function(self)
       self.format = nil
       self.inputPath = nil
+      self.inputStreamPath = nil
       self.outputPath = nil
       self.startTime = 0
       self.endTime = 0
@@ -1100,32 +1103,69 @@ do
       local format = params.format
       local command = {
         get_backend_location(),
-        "-y",
-        "-ss",
-        seconds_to_time_string(params.startTime, false, true),
-        "-i",
-        params.inputPath,
+        "-y"
+      }
+      local ss = seconds_to_time_string(params.startTime, false, true)
+      if params.inputStreamPath ~= nil then
+        local adhocVideoTrack = Track({ })
+        adhocVideoTrack.isExternal = true
+        adhocVideoTrack.externalFilename = params.inputStreamPath
+        for _, track in ipairs({
+          adhocVideoTrack,
+          params.audioTrack,
+          params.subTrack
+        }) do
+          if track ~= nil and track.isExternal and track.externalFilename then
+            append(command, {
+              "-ss",
+              ss,
+              "-i",
+              track.externalFilename
+            })
+          end
+        end
+      else
+        append(command, {
+          "-ss",
+          ss,
+          "-i",
+          params.inputPath
+        })
+        if params.subTrack ~= nil then
+          if params.subTrack.isExternal then
+            if params.subTrack.externalFilename then
+              append(command, {
+                "-ss",
+                ss,
+                "-i",
+                params.subTrack.externalFilename,
+                "-map",
+                "1:" .. tostring(params.subTrack.index)
+              })
+            end
+          else
+            append(command, {
+              "-map",
+              "0:" .. tostring(params.subTrack.index)
+            })
+          end
+        end
+        for _, track in ipairs({
+          params.videoTrack,
+          params.audioTrack
+        }) do
+          if track ~= nil then
+            append(command, {
+              "-map",
+              "0:" .. tostring(track.index)
+            })
+          end
+        end
+      end
+      append(command, {
         "-t",
         tostring(params.endTime - params.startTime)
-      }
-      if params.videoTrack ~= nil and params.videoTrack.index ~= nil then
-        append(command, {
-          "-map",
-          "0:" .. tostring(params.videoTrack.index)
-        })
-      end
-      if params.audioTrack ~= nil and params.audioTrack.index ~= nil then
-        append(command, {
-          "-map",
-          "0:" .. tostring(params.audioTrack.index)
-        })
-      end
-      if params.subTrack ~= nil and params.subTrack.index ~= nil then
-        append(command, {
-          "-map",
-          "0:" .. tostring(params.subTrack.index)
-        })
-      end
+      })
       append(command, {
         "-c:v",
         tostring(format.videoCodec),
@@ -1260,7 +1300,7 @@ get_active_tracks = function()
   local active = { }
   for _, track in ipairs(mp.get_property_native("track-list")) do
     if track["selected"] and accepted[track["type"]] then
-      active[#active + 1] = Track(track["id"], track["ff-index"], track["type"])
+      active[#active + 1] = Track(track)
     end
   end
   return active
@@ -1304,6 +1344,11 @@ encode = function(region, startTime, endTime)
   if not params.inputPath then
     message("No file is being played")
     return 
+  end
+  local stream_path = mp.get_property("stream-path")
+  if stream_path ~= params.inputPath then
+    msg.info("stream-path <-> path mismatch, assuming this is a youtube-dl stream.")
+    params.inputStreamPath = stream_path
   end
   for _, track in ipairs(get_active_tracks()) do
     local _exp_0 = track["type"]
