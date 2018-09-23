@@ -27,9 +27,9 @@ local options = {
 	-- In kilobits.
 	strict_audio_bitrate = 64,
 	-- Sets the output format, from a few predefined ones.
-	-- Currently we have webm-vp8 (libvpx/libvorbis), webm-vp9 (libvpx-vp9/libvorbis)
-	-- and raw (rawvideo/pcm_s16le).
-	output_format = "webm-vp8",
+	-- Currently we have vp8 (libvpx/libvorbis), vp9 (libvpx-vp9/libvorbis),
+	-- h264 (libx264/aac), h265 (libx265/aac) and raw (rawvideo/pcm_s16le).
+	output_format = "vp8",
 	-- The encoding backend to use. Currently supports mpv and ffmpeg.
 	backend = "mpv",
 	-- Location to the backend executable. Leave blank to have this fall back on the backend option.

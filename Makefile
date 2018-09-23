@@ -13,6 +13,7 @@ SOURCES += src/encode/MpvFilter.moon
 SOURCES += src/encode/Track.moon
 SOURCES += src/encode/formats/Format.moon
 SOURCES += src/encode/formats/H264Format.moon
+SOURCES += src/encode/formats/H265Format.moon
 SOURCES += src/encode/formats/RawVideoFormat.moon
 SOURCES += src/encode/formats/VP8Format.moon
 SOURCES += src/encode/formats/VP9Format.moon
