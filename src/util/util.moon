@@ -14,6 +14,17 @@ append = (a, b) ->
 		a[#a+1] = val
 	return a
 
+clamp = (min, val, max) ->
+	return min if val <= min
+	return max if val >= max
+	return val
+
+clamp_point = (top_left, point, bottom_right) ->
+	{
+		x: clamp(top_left.x, point.x, bottom_right.x),
+		y: clamp(top_left.y, point.y, bottom_right.y)
+	}
+
 seconds_to_time_string = (seconds, no_ms, full) ->
 	if seconds < 0
 		return "unknown"

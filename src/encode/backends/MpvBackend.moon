@@ -2,10 +2,16 @@ class MpvBackend extends Backend
 	new: =>
 		@name = "mpv"
 
+	formatKeyValuePairs: (params) =>
+		oneliner = ""
+		for k, v in pairs params
+			oneliner ..= "#{k}=%#{string.len(v)}%#{v}:"
+		return string.sub(oneliner, 0, string.len(oneliner) - 1)
+
 	appendProperty: (out, property_name, option_name) =>
 		option_name = option_name or property_name
 		prop = mp.get_property(property_name)
-		if prop and prop != ""
+		if prop and prop ~= ""
 			append(out, {"--#{option_name}=#{prop}"})
 
 	getPlaybackOptions: =>
@@ -24,9 +30,8 @@ class MpvBackend extends Backend
 		for filter in *filters
 			str = filter.lavfiCompat and "lavfi-" or ""
 			str ..= filter.name .. "="
-			for k, v in pairs filter.params
-				str ..= "#{k}=%#{string.len(v)}%#{v}:"
-			solved[#solved+1] = string.sub(str, 0, string.len(str) - 1)
+			str ..= self\formatKeyValuePairs(filter.params)
+			solved[#solved+1] = str
 		return solved
 
 	buildCommand: (params) =>
@@ -78,6 +83,10 @@ class MpvBackend extends Backend
 		-- Then append them to the command.
 		for f in *filters
 			command[#command+1] = "--vf-add=#{f}"
+
+		-- Append metadata.
+		if #params.metadata > 0
+			append(command, "--oset-metadata=" .. self\formatKeyValuePairs(params.metadata))
 
 		-- Append any extra flags the format wants.
 		append(command, format\getFlags self)

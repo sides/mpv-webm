@@ -110,26 +110,3 @@ monitor_dimensions = () ->
 	}
 	for _, p in ipairs(properties)
 		mp.observe_property(p, "native", set_dimensions_changed)
-
-clamp = (min, val, max) ->
-	return min if val <= min
-	return max if val >= max
-	return val
-
-clamp_point = (top_left, point, bottom_right) ->
-	{
-		x: clamp(top_left.x, point.x, bottom_right.x),
-		y: clamp(top_left.y, point.y, bottom_right.y)
-	}
-
-make_fullscreen_region = () ->
-	r = Region!
-	d = get_video_dimensions!
-	a = VideoPoint!
-	b = VideoPoint!
-	{x: xa, y: ya} = d.top_left
-	a\set_from_screen(xa, ya)
-	{x: xb, y: yb} = d.bottom_right
-	b\set_from_screen(xb, yb)
-	r\set_from_points(a, b)
-	return r

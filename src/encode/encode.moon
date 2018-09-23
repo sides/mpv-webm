@@ -64,7 +64,7 @@ encode = (region, startTime, endTime) ->
 	-- Solve this by using a region that covers the entire visible screen.
 	if not region or not region\is_valid!
 		msg.verbose("Invalid/unset region, using fullscreen one.")
-		params.crop = make_fullscreen_region!
+		params.crop = Region\makeFullscreen!
 	else
 		params.crop = region
 

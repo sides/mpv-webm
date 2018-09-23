@@ -2,6 +2,9 @@ class FfmpegBackend extends Backend
 	new: =>
 		@name = "ffmpeg"
 
+	escapeQuotes: (str) =>
+		return str\gsub("\"", "\\\"")
+
 	-- Turn `MpvFilter`s into command line options.
 	solveFilters: (filters) =>
 		solved = {}
@@ -89,6 +92,11 @@ class FfmpegBackend extends Backend
 		append(command, {
 			"-vf", table.concat(filters, ",")
 		})
+
+		for k, v in pairs params.metadata
+			append(command, {
+				"-metadata", "#{k}=\"#{self\escapeQuotes(v)}\""
+			})
 
 		-- Append any extra flags the format wants.
 		append(command, format\getFlags self)
