@@ -43,6 +43,7 @@ local options = {
   apply_current_filters = true,
   -- Set the number of encoding threads, for codecs libvpx and libvpx-vp9
   libvpx_threads = 4,
+  libx264_preset = "veryfast",
   additional_flags = "",
   -- Useful for flags that may impact output filesize, such as crf, qmin, qmax etc
   -- Won't be applied when strict_filesize_constraint is on.
@@ -785,6 +786,64 @@ do
   WebmVP9 = _class_0
 end
 formats["webm-vp9"] = WebmVP9()
+local H264
+do
+  local _class_0
+  local _parent_0 = Format
+  local _base_0 = {
+    getFlags = function(self, backend)
+      local _exp_0 = backend.name
+      if "mpv" == _exp_0 then
+        return {
+          "--ovcopts-add=preset=" .. tostring(options.libx264_preset)
+        }
+      elseif "ffmpeg" == _exp_0 then
+        return {
+          "-preset",
+          options.libx264_preset
+        }
+      end
+    end
+  }
+  _base_0.__index = _base_0
+  setmetatable(_base_0, _parent_0.__base)
+  _class_0 = setmetatable({
+    __init = function(self)
+      self.displayName = "H.264"
+      self.supportsTwopass = true
+      self.videoCodec = "libx264"
+      self.audioCodec = "aac"
+      self.outputExtension = "mp4"
+      self.acceptsBitrate = true
+    end,
+    __base = _base_0,
+    __name = "H264",
+    __parent = _parent_0
+  }, {
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil then
+        local parent = rawget(cls, "__parent")
+        if parent then
+          return parent[name]
+        end
+      else
+        return val
+      end
+    end,
+    __call = function(cls, ...)
+      local _self_0 = setmetatable({}, _base_0)
+      cls.__init(_self_0, ...)
+      return _self_0
+    end
+  })
+  _base_0.__class = _class_0
+  if _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
+  H264 = _class_0
+end
+formats["hevc-h264"] = H264()
 local backends = { }
 local Backend
 do
@@ -1831,6 +1890,7 @@ do
       local formatIds = {
         "webm-vp8",
         "webm-vp9",
+        "hevc-h264",
         "raw"
       }
       local formatOpts = {
